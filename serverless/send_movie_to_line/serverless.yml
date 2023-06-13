@@ -1,0 +1,47 @@
+service: send-movie-to-line
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: ap-northeast-1
+  timeout: 180
+  environment:
+    BUCKET_NAME: ${env:BUCKET_NAME}
+    LINE_ACCESS_TOKEN: ${env:LINE_ACCESS_TOKEN}
+    LINE_TO: ${env:LINE_ACCESS_TOKEN}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:ListBucket
+          Resource:
+            - arn:aws:s3:::${self:provider.environment.BUCKET_NAME}
+            - arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource:
+            - '*'
+
+functions:
+  create:
+    handler: handler.lambda_handler
+    events:
+      - schedule: cron(0 10 * * ? *) # JST 19:00 (UTC 10:00)
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    noDeploy: []
